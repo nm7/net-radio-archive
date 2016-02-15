@@ -104,12 +104,6 @@ module Main
     FileUtils.mkdir_p(dst_dir)
     FileUtils.mv(src, dst)
 
-    # create symlink
-    FileUtils.mkdir_p(latest_dir)
-    unless File.exist?(latest_symlink)
-      FileUtils.ln_s(dst, latest_symlink)
-    end
-
     # create selections symlink
     if Settings.selections.present?
       if Settings.selections.any? {|s| !!filename.match(s) }
@@ -120,6 +114,12 @@ module Main
           FileUtils.ln_s(dst, selection_symlink)
         end
       end
+    end
+
+    # create symlink
+    FileUtils.mkdir_p(latest_dir)
+    unless File.exist?(latest_symlink)
+      FileUtils.ln_s(dst, latest_symlink)
     end
   end
 
