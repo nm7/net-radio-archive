@@ -184,9 +184,9 @@ module Main
     end
 
     def rec_one
-      job = nil
+      jobs = nil
       ActiveRecord::Base.transaction do
-        job = Job
+        jobs = Job
           .where(
             "? <= `start` and `start` <= ?",
             2.minutes.ago,
@@ -195,30 +195,49 @@ module Main
           .where(state: Job::STATE[:scheduled])
           .order(:start)
           .lock
-          .first
-        unless job
+        unless jobs
           return 0
         end
-
-        job.state = Job::STATE[:recording]
-        job.save!
       end
 
-      succeed = false
-      if job.ch == Job::CH[:ag]
-        succeed = Ag::Recording.new.record(job)
-      elsif Settings.radiru_channels && Settings.radiru_channels.include?(job.ch)
-        succeed = Radiru::Recording.new.record(job)
-      else
-        succeed = Radiko::Recording.new.record(job)
+      thread_array = []
+      jobs.each do |job|
+        thread_array << Thread.start(job) {|j|
+          Rails.logger.info "rec thread created. job:#{j.id}"
+
+          ActiveRecord::Base.connection_pool.with_connection do
+            j.state = Job::STATE[:recording]
+            j.save!
+          end
+
+          succeed = false
+          if j.ch == Job::CH[:ag]
+            succeed = Ag::Recording.new.record(j)
+          elsif Settings.radiru_channels && Settings.radiru_channels.include?(j.ch)
+            succeed = Radiru::Recording.new.record(j)
+          else
+            succeed = Radiko::Recording.new.record(j)
+          end
+
+          ActiveRecord::Base.connection_pool.with_connection do
+            j.state =
+              if succeed
+                Job::STATE[:done]
+              else
+                Job::STATE[:failed]
+              end
+            j.save!
+          end
+
+          Rails.logger.info "rec thread end. job:#{j.id}"
+        }
+
+        sleep 1
       end
-      job.state =
-        if succeed
-          Job::STATE[:done]
-        else
-          Job::STATE[:failed]
-        end
-      job.save!
+
+      thread_array.each do |th|
+        th.join
+      end
 
       return 0
     end
