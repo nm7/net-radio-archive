@@ -185,18 +185,20 @@ module Main
 
     def rec_one
       jobs = nil
-      ActiveRecord::Base.transaction do
-        jobs = Job
-          .where(
-            "? <= `start` and `start` <= ?",
-            2.minutes.ago,
-            5.minutes.from_now
-          )
-          .where(state: Job::STATE[:scheduled])
-          .order(:start)
-          .lock
-        unless jobs
-          return 0
+      ActiveRecord::Base.connection_pool.with_connection do
+        ActiveRecord::Base.transaction do
+          jobs = Job
+            .where(
+              "? <= `start` and `start` <= ?",
+              2.minutes.ago,
+              5.minutes.from_now
+            )
+            .where(state: Job::STATE[:scheduled])
+            .order(:start)
+            .lock
+          unless jobs
+            return 0
+          end
         end
       end
 
