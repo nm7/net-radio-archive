@@ -8,6 +8,7 @@ module Ag
 
     def record(job)
       unless exec_rec(job)
+        exec_convert_splitted(job)
         return false
       end
       exec_convert(job)
@@ -34,6 +35,15 @@ module Ag
       mp4_path = Main::file_path_working(CH_NAME, title(job), 'mp4')
       Main::convert_ffmpeg_to_mp4(flv_path, mp4_path, job)
       Main::move_to_archive_dir(CH_NAME, job.start, mp4_path)
+    end
+
+    def exec_convert_splitted(job)
+      flv_paths = Dir.glob(Main::file_path_working_base(CH_NAME, title(job)) + '*.flv')
+      flv_paths.each{|flv_path|
+        mp4_path = flv_path.sub(/\.flv$/, '.mp4')
+        Main::convert_ffmpeg_to_mp4(flv_path, mp4_path, job)
+        Main::move_to_archive_dir(CH_NAME, job.start, mp4_path)
+      }
     end
 
     def title(job)

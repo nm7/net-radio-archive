@@ -11,7 +11,7 @@ class Job < ActiveRecord::Base
   }
 
   def length_sec
-    (self.end - self.start).to_i
+    (self.end - Time.now).to_i
   end
 
   def schedule
