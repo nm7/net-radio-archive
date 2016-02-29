@@ -16,6 +16,8 @@ module Radiko
         return false
       end
       exec_convert(job)
+
+      true
     end
 
     def exec_rec(job)
