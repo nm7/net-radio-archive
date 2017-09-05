@@ -34,9 +34,9 @@ namespace :main do
     Main::Main.new.niconama_scrape
   end
 
-  desc 'agon scrape'
-  task :agon_scrape => :environment do
-    Main::Main.new.agon_scrape
+  desc 'agonp scrape'
+  task :agonp_scrape => :environment do
+    Main::Main.new.agonp_scrape
   end
 
   desc 'wikipedia scape'

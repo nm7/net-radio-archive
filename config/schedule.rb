@@ -5,6 +5,8 @@
 #
 # Learn more: http://github.com/javan/whenever
 
+set :output, {error: 'log/cron.log', standard: 'log/cron.log'}
+
 job_type :rake_not_silent, 'sleep $[ ( $RANDOM % 30 )  + 1 ]s; export PATH=/usr/local/bin:$PATH; export LANG=en_US.UTF-8; cd :path && :environment_variable=:environment bundle exec rake :task :output'
 
 every 1.minute do
@@ -54,8 +56,8 @@ every '17 10-22 * * *' do
   rake_not_silent 'main:anitama_scrape'
 end
 
-every '21 10-22 * * *' do
-  rake_not_silent 'main:agon_scrape'
+every '23 10-22 * * *' do
+  rake_not_silent 'main:agonp_scrape'
 end
 
 every '38 15 1 * *' do

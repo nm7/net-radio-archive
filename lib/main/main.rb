@@ -144,25 +144,25 @@ module Main
       end
     end
 
-    def agon_scrape
-      unless Settings.agon
+    def agonp_scrape
+      unless Settings.agonp
         exit 0
       end
 
-      program_list = Agon::Scraping.new.main
+      program_list = Agonp::Scraping.new.main
 
       program_list.each do |program|
         ActiveRecord::Base.transaction do
-          if AgonProgram.where(episode_id: program.episode_id).first
+          if AgonpProgram.where(episode_id: program.episode_id).first
             next
           end
 
-          p = AgonProgram.new
+          p = AgonpProgram.new
           p.title = program.title
           p.personality = program.personality
           p.episode_id = program.episode_id
-          p.page_url = program.page_url
-          p.state = HibikiProgram::STATE[:waiting]
+          p.price = program.price
+          p.state = OndemandRetry::STATE[:waiting]
           p.retry_count = 0
           p.save
         end
@@ -243,7 +243,7 @@ module Main
       onsen_download
       hibiki_download
       anitama_download
-      agon_download
+      agonp_download
     end
 
     LOCK_NICONAMA_DOWNLOAD = 'lock_niconama_download'
@@ -330,11 +330,11 @@ module Main
       download(AnitamaProgram, Anitama::Downloading.new)
     end
 
-    def agon_download
-      unless Settings.agon
+    def agonp_download
+      unless Settings.agonp
         exit 0
       end
-      download(AgonProgram, Agon::Downloading.new)
+      download(AgonpProgram, Agonp::Downloading.new)
     end
 
     def download(model_klass, downloader)
@@ -349,7 +349,12 @@ module Main
         p.save!
       end
 
-      succeed = downloader.download(p)
+      succeed = false
+      begin
+        succeed = downloader.download(p)
+      rescue => e
+        Rails.logger.error %W|#{e.class}\n#{e.inspect}\n#{e.backtrace.join("\n")}|
+      end
       p.state =
         if succeed
           model_klass::STATE[:done]
